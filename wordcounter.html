@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Counter with Advanced Filter</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        textarea {
+            width: 80%;
+            height: 150px;
+            margin-bottom: 20px;
+            padding: 10px;
+            font-size: 16px;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            width: 80%;
+            margin-bottom: 20px;
+        }
+        .controls > * {
+            margin: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        table {
+            width: 80%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #007bff;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>Word Counter with Advanced Filter</h1>
+    <textarea id="textInput" placeholder="Paste your text here..."></textarea>
+    <div class="controls">
+        <button onclick="countWords()">Count Words</button>
+        <input type="number" id="minCount" placeholder="Min occurrences" min="1" value="1" oninput="filterWords()">
+        <input type="number" id="maxCount" placeholder="Max occurrences" min="1" oninput="filterWords()">
+        <select id="sortBy" onchange="filterWords()">
+            <option value="word">Sort by Word</option>
+            <option value="count">Sort by Count</option>
+        </select>
+        <label>
+            <input type="checkbox" id="filterStopWords" onchange="filterWords()"> Exclude Common Words
+        </label>
+        <button onclick="exportWords()">Export Words as Array</button>
+    </div>
+    <table id="wordTable">
+        <thead>
+            <tr>
+                <th>Word</th>
+                <th>Count</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+    <script>
+        let wordCount = {};
+        const stopWords = [
+            "a", "an", "and", "are", "as", "at", "be", "but", "by", "for", "if", 
+            "in", "into", "is", "it", "no", "not", "of", "on", "or", "such", 
+            "that", "the", "their", "then", "there", "these", "they", "this", 
+            "to", "was", "will", "with"
+        ];
+
+        function countWords() {
+            const textInput = document.getElementById('textInput').value;
+            const words = textInput.toLowerCase().match(/\b\w+\b/g);
+            wordCount = {};
+
+            if (words) {
+                words.forEach(word => {
+                    if (!stopWords.includes(word) || !document.getElementById('filterStopWords').checked) {
+                        wordCount[word] = (wordCount[word] || 0) + 1;
+                    }
+                });
+            }
+
+            filterWords();
+        }
+
+        function filterWords() {
+            const minCount = parseInt(document.getElementById('minCount').value, 10) || 1;
+            const maxCount = parseInt(document.getElementById('maxCount').value, 10) || Infinity;
+            const sortBy = document.getElementById('sortBy').value;
+            const tbody = document.querySelector('#wordTable tbody');
+            tbody.innerHTML = '';
+
+            let filteredWords = Object.entries(wordCount).filter(([word, count]) => count >= minCount && count <= maxCount);
+
+            if (sortBy === 'word') {
+                filteredWords.sort((a, b) => a[0].localeCompare(b[0]));
+            } else if (sortBy === 'count') {
+                filteredWords.sort((a, b) => b[1] - a[1]);
+            }
+
+            for (const [word, count] of filteredWords) {
+                const row = document.createElement('tr');
+                const wordCell = document.createElement('td');
+                const countCell = document.createElement('td');
+                wordCell.textContent = word;
+                countCell.textContent = count;
+                row.appendChild(wordCell);
+                row.appendChild(countCell);
+                tbody.appendChild(row);
+            }
+        }
+
+        function exportWords() {
+            const wordArray = Object.entries(wordCount).map(([word, count]) => ({ word, count }));
+            const wordArrayStr = JSON.stringify(wordArray, null, 2);
+            const blob = new Blob([wordArrayStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'wordCounts.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+    </script>
+</body>
+</html>
